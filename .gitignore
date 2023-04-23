@@ -1,0 +1,4 @@
+*.zip
+*.mdb
+*.env
+__pycache__/

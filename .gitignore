@@ -2,3 +2,5 @@
 *.mdb
 *.env
 __pycache__/
+txt
+venv/

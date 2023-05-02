@@ -3,8 +3,17 @@ import sqlalchemy
 import numpy as np
 import pandas as pd
 import pyodbc
+import requests
+
 
 config = dotenv_values()
+
+def download_google_document(file_id: str, destination: str):
+    google_drive_url = "https://drive.google.com/uc"
+    params = dict(id=file_id, confirm=1, export="download")
+    res = requests.get(google_drive_url, params=params, stream=True)
+    with open(destination, "wb") as file:
+        file.write(res.content)
 
 
 def get_db_conn(conn_string="", dialect=None):
@@ -26,6 +35,7 @@ def get_db_conn(conn_string="", dialect=None):
         )
         engine = sqlalchemy.create_engine(url=connection_string)
         return engine
+    
     if dialect == "msaccess":
         ms_access_string = (
             rf"DRIVER={config.get('MSACCESS_DRIVER')};"

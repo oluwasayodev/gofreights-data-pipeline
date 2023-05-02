@@ -4,52 +4,49 @@ from utils import haversine_distance, get_db_conn, get_lat_long_decimal
 distress_caller_lat = 32.610982
 distress_caller_long = -38.706256
 
-port_needed = ["provisions", "water", "fuel_oil", "diesel"]
-
 wpi_port_query = """
 SELECT 
 	DISTINCT
-    [Wpi_country_code],
-    [Main_port_name],
-    [Latitude_degrees],
-    [Latitude_minutes],
-    [Latitude_hemisphere],
-    [Longitude_degrees],
-    [Longitude_minutes],
-    [Longitude_hemisphere]
-    FROM [Wpi Data]
-WHERE [Supplies_provisions] = 'Y'
-	AND [Supplies_water] = 'Y'
-	AND [Supplies_fuel_oil] = 'Y'
-	AND [Supplies_diesel_oil] = 'Y'
+    "Wpi_country_code",
+    "Main_port_name",
+    "Latitude_degrees",
+    "Latitude_minutes",
+    "Latitude_hemisphere",
+    "Longitude_degrees",
+    "Longitude_minutes",
+    "Longitude_hemisphere"
+    FROM "Wpi Data"
+WHERE "Supplies_provisions" = 'Y'
+	AND "Supplies_water" = 'Y'
+	AND "Supplies_fuel_oil" = 'Y'
+	AND "Supplies_diesel_oil" = 'Y'
 ORDER BY
-   [Latitude_degrees],
-   [Longitude_degrees],
-   [Latitude_minutes],
-   [Longitude_minutes];
+   "Latitude_degrees",
+   "Longitude_degrees",
+   "Latitude_minutes",
+   "Longitude_minutes";
 """
 
-conn_string = (
-    r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
-    r"DBQ=C:\Users\hp\10alytics\gofreights-data-project\WPI.mdb;"
-)
 
 
-conn = get_db_conn(conn_string, dialect="msaccess")
+conn = get_db_conn(dialect="postgres")
 wpi_port_df = pd.read_sql(wpi_port_query, con=conn)
 wpi_port_df = wpi_port_df.apply(get_lat_long_decimal, axis=1)
 wpi_port_df = wpi_port_df.loc[
     :, ["Wpi_country_code", "Main_port_name", "latitude", "longitude"]
 ]
 
+wpi_port_df["distress_latitude"] = distress_caller_lat
+wpi_port_df["distress_longitude"] = distress_caller_long
+
 wpi_port_df["distance_from_distress_caller"] = haversine_distance(
     wpi_port_df["latitude"],
-    pd.Series([distress_caller_lat]),
+    wpi_port_df["distress_latitude"],
     wpi_port_df["longitude"],
-    pd.Series([distress_caller_long]),
+    wpi_port_df["distress_longitude"],
 )
 
-countries_query = "SELECT * FROM [Country Codes]"
+countries_query = """SELECT * FROM "Country Codes" """
 countries = pd.read_sql(countries_query, con=conn)
 
 new_df = pd.merge(
